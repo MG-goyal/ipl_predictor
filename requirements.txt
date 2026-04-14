@@ -6,3 +6,5 @@ scikit-learn
 xgboost
 pydantic
 pyarrow
+streamlit
+requests

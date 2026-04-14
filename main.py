@@ -4,6 +4,7 @@
 
 from fastapi import FastAPI
 from pydantic import BaseModel
+import traceback
 
 from predictors.score_predict import predict_score
 from predictors.defend_predict import predict_defendability
@@ -42,65 +43,74 @@ def home():
 @app.post("/full-prediction")
 def full_prediction(data: MatchInput):
 
-    # ---------------------------------
-    # COMMON INPUT
-    # ---------------------------------
-    match = {
-        "team1": data.team1,
-        "team2": data.team2,
-        "venue": data.venue,
-        "toss_winner": data.toss_winner,
-        "toss_decision": data.toss_decision,
-        "batting_team_avg": data.batting_team_avg,
-        "venue_avg_score": data.venue_avg_score,
-        "recent_form": data.recent_form
-    }
+    try:
 
-    # ---------------------------------
-    # STEP 1 : SCORE MODEL
-    # ---------------------------------
-    score_result = predict_score(match)
+        # ---------------------------------
+        # COMMON INPUT
+        # ---------------------------------
+        match = {
+            "team1": data.team1,
+            "team2": data.team2,
+            "venue": data.venue,
+            "toss_winner": data.toss_winner,
+            "toss_decision": data.toss_decision,
+            "batting_team_avg": data.batting_team_avg,
+            "venue_avg_score": data.venue_avg_score,
+            "recent_form": data.recent_form
+        }
 
-    predicted_score = score_result["predicted_score"]
-    batting_team = score_result["batting_team"]
-    bowling_team = score_result["bowling_team"]
+        # ---------------------------------
+        # STEP 1 : SCORE MODEL
+        # ---------------------------------
+        score_result = predict_score(match)
 
-    # ---------------------------------
-    # STEP 2 : DEFEND MODEL
-    # ---------------------------------
-    defend_prob, chase_prob = predict_defendability(
-        match,
-        predicted_score
-    )
+        predicted_score = score_result["predicted_score"]
+        batting_team = score_result["batting_team"]
+        bowling_team = score_result["bowling_team"]
 
-    defendable = True if defend_prob > 0.65 else False
+        # ---------------------------------
+        # STEP 2 : DEFEND MODEL
+        # ---------------------------------
+        defend_prob, chase_prob = predict_defendability(
+            match,
+            predicted_score
+        )
 
-    # ---------------------------------
-    # STEP 3 : WINNER MODEL
-    # ---------------------------------
-    winner_input = {
-        "team1": data.team1,
-        "team2": data.team2,
-        "venue": data.venue,
-        "toss_winner": data.toss_winner,
-        "toss_decision": data.toss_decision,
-        "predicted_score": predicted_score,
-        "defendable": defendable
-    }
+        defendable = True if defend_prob > 0.65 else False
 
-    predicted_winner = predict_match_winner(winner_input)
+        # ---------------------------------
+        # STEP 3 : WINNER MODEL
+        # ---------------------------------
+        winner_input = {
+            "team1": data.team1,
+            "team2": data.team2,
+            "venue": data.venue,
+            "toss_winner": data.toss_winner,
+            "toss_decision": data.toss_decision,
+            "predicted_score": predicted_score,
+            "defendable": defendable
+        }
 
-    # ---------------------------------
-    # OUTPUT
-    # ---------------------------------
-    return {
-    "predicted_score": float(predicted_score),
-    "batting_team": batting_team,
-    "bowling_team": bowling_team,
+        predicted_winner = predict_match_winner(winner_input)
 
-    "defend_probability": float(defend_prob),
-    "chase_probability": float(chase_prob),
-    "defendable": bool(defendable),
+        # ---------------------------------
+        # OUTPUT
+        # ---------------------------------
+        return {
+            "predicted_score": float(predicted_score),
+            "batting_team": batting_team,
+            "bowling_team": bowling_team,
 
-    "winner_prediction": batting_team if defendable else bowling_team
-    }
+            "defend_probability": float(defend_prob),
+            "chase_probability": float(chase_prob),
+            "defendable": bool(defendable),
+
+            "winner_prediction": batting_team if defendable else bowling_team
+        }
+
+    except Exception as e:
+        traceback.print_exc()
+
+        return {
+            "error": "Prediction failed. Please try again."
+        }
