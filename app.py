@@ -134,8 +134,10 @@ if st.button("🔥 Predict Match", use_container_width=True):
         # ---------------------------------
         # API FAILED
         # ---------------------------------
+        # else:
+        #     st.error("Server error. Please try again later.")
         else:
-            st.error("Server error. Please try again later.")
+            st.error(f"Error {response.status_code}: {response.text}")
 
     # ---------------------------------
     # NO RAW LOGS SHOWN
@@ -146,5 +148,7 @@ if st.button("🔥 Predict Match", use_container_width=True):
     except requests.exceptions.Timeout:
         st.error("Server timeout. Try again.")
 
-    except Exception:
-        st.error("Something went wrong. Please try again.")
+    # except Exception:
+    #     st.error("Something went wrong. Please try again.")
+    except Exception as e:
+        st.error(f"Unexpected error: {str(e)}")
