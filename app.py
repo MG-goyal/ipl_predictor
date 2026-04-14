@@ -83,7 +83,7 @@ if st.button("🔥 Predict Match", use_container_width=True):
         with st.spinner("Analyzing Match..."):
 
             response = requests.post(
-                "http://127.0.0.1:8000/full-prediction",
+                "https://ipl-predictor-vjyd.onrender.com/",
                 json=payload,
                 timeout=10
             )
